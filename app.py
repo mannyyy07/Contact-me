@@ -3,7 +3,7 @@ import sqlite3
 import os
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY", "change-this-later")
+app.secret_key = os.environ.get("SECRET_KEY", "fallback-secret")
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "database.db")
@@ -37,8 +37,7 @@ def index():
         conn = connect_db()
         cursor = conn.cursor()
         cursor.execute(
-            "INSERT INTO messages (name, email, message)
-            VALUES (?, ?, ?)",
+            "INSERT INTO messages (name, email, message) VALUES (?, ?, ?)",
             (name, email, message)
         )
         conn.commit()
@@ -51,13 +50,9 @@ def index():
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        if (
-            request.form["username"] == "admin"
-            and request.form["password"] == "admin123"
-        ):
+        if request.form["username"] == "admin" and request.form["password"] == "admin123":
             session["admin"] = True
             return redirect("/messages")
-
     return render_template("login.html")
 
 @app.route("/messages")
@@ -77,6 +72,3 @@ def messages():
 def logout():
     session.pop("admin", None)
     return redirect("/")
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
