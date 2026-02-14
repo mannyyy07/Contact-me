@@ -1,21 +1,76 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Contact Form</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="static/style.css">
 </head>
 
 <body>
+    <div class="theme-toggle">
+        <button id="themeToggle" class="theme-btn" title="Toggle Dark/Light Mode">
+            <i class="fas fa-moon"></i>
+        </button>
+    </div>
+
     <div class="container">
-        <h2>Contact Me</h2>
+        <div class="form-header">
+            <i class="fas fa-envelope"></i>
+            <h2>Get In Touch</h2>
+            <p>We'd love to hear from you. Send us a message!</p>
+        </div>
 
-        <form method="POST" onsubmit="return validateForm()">
+        <div id="successMessage" class="success-message">
+            <i class="fas fa-check-circle"></i>
+            <span>Message sent successfully! Check your message status with the link provided.</span>
+        </div>
 
-            <input type="text" name="name" placeholder="Your Name" required>
-            <input type="email" name="email" placeholder="Your Email" required>
-            <textarea name="message" placeholder="Your Message" required></textarea>
-            <button type="submit">Send</button>
+        <form id="contactForm" method="POST" enctype="multipart/form-data" onsubmit="return validateForm(event)">
+
+            <div class="form-group">
+                <label for="name">Name</label>
+                <input type="text" id="name" name="name" placeholder="Enter your full name" required>
+                <span class="error-message" id="nameError"></span>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" placeholder="your.email@example.com" required>
+                <span class="error-message" id="emailError"></span>
+            </div>
+
+            <div class="form-group">
+                <label for="message">Message</label>
+                <textarea id="message" name="message" placeholder="Tell us your thoughts... (minimum 10 characters)"
+                    required></textarea>
+                <span class="char-count"><span id="charCount">0</span>/500</span>
+                <span class="error-message" id="messageError"></span>
+            </div>
+
+            <div class="form-group">
+                <label for="file">Attach File (Optional)</label>
+                <div class="file-input-wrapper">
+                    <input type="file" id="file" name="file" accept=".txt,.pdf,.png,.jpg,.jpeg,.gif,.doc,.docx,.zip">
+                    <span class="file-name" id="fileName">No file chosen</span>
+                    <span class="file-size" id="fileSize"></span>
+                </div>
+                <p class="file-help">Max 16MB • Accepted: txt, pdf, png, jpg, jpeg, gif, doc, docx, zip</p>
+                <span class="error-message" id="fileError"></span>
+            </div>
+
+            <div class="button-group">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-paper-plane"></i>
+                    <span>Send Message</span>
+                </button>
+                <button type="reset" class="btn btn-secondary">
+                    <i class="fas fa-redo"></i>
+                    <span>Clear</span>
+                </button>
+            </div>
         </form>
     </div>
 </body>

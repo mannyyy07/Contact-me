@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Message - Contact Form</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .message-tracker-container {
+            width: 100%;
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-tertiary) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tracker-background {
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(56, 189, 248, 0.1) 0%, transparent 70%);
+            border-radius: 50%;
+            animation: float 8s ease-in-out infinite;
+        }
+
+        .tracker-background:nth-child(1) {
+            top: -100px;
+            left: -100px;
+            animation-delay: 0s;
+        }
+
+        .tracker-background:nth-child(2) {
+            bottom: -100px;
+            right: -100px;
+            animation-delay: 2s;
+            background: radial-gradient(circle, rgba(249, 115, 22, 0.1) 0%, transparent 70%);
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(30px);
+            }
+        }
+
+        .tracker-card {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 600px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideInScale 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes slideInScale {
+            from {
+                opacity: 0;
+                transform: translateY(30px) scale(0.95);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .tracker-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #38bdf8;
+            text-decoration: none;
+            font-size: 0.9em;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            gap: 12px;
+            color: #06b6d4;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9em;
+            margin-bottom: 20px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .status-badge.replied {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .status-badge.pending {
+            background: rgba(249, 115, 22, 0.2);
+            color: #f97316;
+            border: 1px solid rgba(249, 115, 22, 0.3);
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.7;
+            }
+        }
+
+        .tracker-header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #38bdf8, #06b6d4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .tracker-meta {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin: 30px 0;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+        }
+
+        .meta-item {
+            text-align: center;
+        }
+
+        .meta-label {
+            color: var(--text-secondary);
+            font-size: 0.85em;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .meta-value {
+            color: #38bdf8;
+            font-weight: 600;
+            font-size: 1.1em;
+        }
+
+        .message-content {
+            background: rgba(56, 189, 248, 0.05);
+            border-left: 4px solid #38bdf8;
+            padding: 25px;
+            border-radius: 12px;
+            margin: 30px 0;
+            line-height: 1.8;
+            animation: fadeInUp 0.7s ease-out 0.2s backwards;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .file-section {
+            background: rgba(56, 189, 248, 0.1);
+            border: 2px dashed rgba(56, 189, 248, 0.3);
+            padding: 20px;
+            border-radius: 12px;
+            margin: 25px 0;
+            text-align: center;
+            animation: fadeInUp 0.7s ease-out 0.3s backwards;
+        }
+
+        .file-section a {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            color: #38bdf8;
+            text-decoration: none;
+            font-weight: 600;
+            padding: 10px 20px;
+            background: rgba(56, 189, 248, 0.1);
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .file-section a:hover {
+            background: rgba(56, 189, 248, 0.2);
+            gap: 15px;
+        }
+
+        .replies-container {
+            margin: 40px 0;
+            animation: fadeInUp 0.7s ease-out 0.4s backwards;
+        }
+
+        .replies-title {
+            font-size: 1.3em;
+            margin-bottom: 20px;
+            color: #38bdf8;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .reply-card {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(56, 189, 248, 0.05) 100%);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            animation: slideInUp 0.5s ease-out backwards;
+        }
+
+        .reply-card:nth-child(1) {
+            animation-delay: 0s;
+        }
+
+        .reply-card:nth-child(2) {
+            animation-delay: 0.1s;
+        }
+
+        .reply-card:nth-child(3) {
+            animation-delay: 0.2s;
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .reply-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .reply-badge {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .reply-time {
+            color: var(--text-secondary);
+            font-size: 0.85em;
+            margin-left: auto;
+        }
+
+        .reply-text {
+            color: var(--text-primary);
+            line-height: 1.6;
+            font-size: 0.95em;
+        }
+
+        .no-replies {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-secondary);
+            animation: fadeInUp 0.7s ease-out 0.4s backwards;
+        }
+
+        .no-replies-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
+        .no-replies p {
+            font-size: 1.1em;
+            margin-bottom: 10px;
+        }
+
+        .no-replies-hint {
+            font-size: 0.9em;
+            color: var(--text-secondary);
+        }
+
+        .link-section {
+            background: linear-gradient(135deg, rgba(249, 115, 22, 0.1) 0%, rgba(56, 189, 248, 0.05) 100%);
+            border: 1px solid rgba(249, 115, 22, 0.3);
+            border-radius: 12px;
+            padding: 25px;
+            margin: 30px 0;
+            animation: fadeInUp 0.7s ease-out 0.5s backwards;
+        }
+
+        .link-title {
+            color: #f97316;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .link-container {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .link-box {
+            flex: 1;
+            font-family: 'Courier New', monospace;
+            color: #38bdf8;
+            font-size: 0.85em;
+            word-break: break-all;
+            padding: 8px;
+            background: rgba(56, 189, 248, 0.05);
+            border-radius: 6px;
+        }
+
+        .copy-btn {
+            flex-shrink: 0;
+            background: linear-gradient(135deg, #38bdf8, #06b6d4);
+            border: none;
+            color: white;
+            padding: 10px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .copy-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(56, 189, 248, 0.4);
+        }
+
+        .copy-btn:active {
+            transform: translateY(0);
+        }
+
+        .copy-btn.copied {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+        }
+
+        .copy-feedback {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            display: none;
+            align-items: center;
+            gap: 10px;
+            animation: slideInRight 0.4s ease-out;
+            z-index: 1000;
+        }
+
+        .copy-feedback.show {
+            display: flex;
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(100px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .tracker-card {
+                padding: 25px;
+            }
+
+            .tracker-header h1 {
+                font-size: 1.5em;
+            }
+
+            .link-container {
+                flex-direction: column;
+            }
+
+            .copy-btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="message-tracker-container">
+        <div class="tracker-background"></div>
+        <div class="tracker-background"></div>
+
+        <div class="tracker-card">
+            <a href="/" class="back-btn">
+                <i class="fas fa-arrow-left"></i> Back to Contact Form
+            </a>
+
+            <div class="tracker-header">
+                {% if message.replies %}
+                <span class="status-badge replied">
+                    <i class="fas fa-check-circle"></i> We Replied!
+                </span>
+                <h1><i class="fas fa-envelope-open-text"></i> Reply Received</h1>
+                {% else %}
+                <span class="status-badge pending">
+                    <i class="fas fa-clock"></i> Awaiting Reply
+                </span>
+                <h1><i class="fas fa-hourglass-end"></i> We're Looking Into It</h1>
+                {% endif %}
+            </div>
+
+            <div class="tracker-meta">
+                <div class="meta-item">
+                    <div class="meta-label"><i class="fas fa-user"></i> From</div>
+                    <div class="meta-value">{{ message.name }}</div>
+                </div>
+                <div class="meta-item">
+                    <div class="meta-label"><i class="fas fa-envelope"></i> Email</div>
+                    <div class="meta-value" style="font-size: 0.85em;">{{ message.email }}</div>
+                </div>
+                <div class="meta-item">
+                    <div class="meta-label"><i class="fas fa-calendar"></i> Date</div>
+                    <div class="meta-value">{{ message.created_at[:10] }}</div>
+                </div>
+            </div>
+
+            <div class="message-content">
+                <strong style="color: #38bdf8; display: block; margin-bottom: 10px;">Your Message:</strong>
+                {{ message.message }}
+            </div>
+
+            {% if message.file_path %}
+            <div class="file-section">
+                <a href="{{ url_for('download_file', filename=message.file_path) }}" target="_blank">
+                    <i class="fas fa-download"></i> Download Your Attachment
+                </a>
+            </div>
+            {% endif %}
+
+            <div class="replies-container">
+                <h2 class="replies-title">
+                    <i class="fas fa-comments"></i>
+                    {% if message.replies %}
+                    Replies ({{ message.replies|length }})
+                    {% else %}
+                    No Replies Yet
+                    {% endif %}
+                </h2>
+
+                {% if message.replies %}
+                {% for reply in message.replies %}
+                <div class="reply-card">
+                    <div class="reply-header">
+                        <span class="reply-badge">
+                            <i class="fas fa-user-tie"></i> Admin
+                        </span>
+                        <span class="reply-time">
+                            <i class="fas fa-calendar-alt"></i> {{ reply[1][:10] }} • {{ reply[1][11:16] }}
+                        </span>
+                    </div>
+                    <p class="reply-text">{{ reply[0] }}</p>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="no-replies">
+                    <div class="no-replies-icon">
+                        <i class="fas fa-inbox"></i>
+                    </div>
+                    <p>We haven't replied yet</p>
+                    <div class="no-replies-hint">
+                        Our team is working on your message. Check back soon!
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="link-section">
+                <div class="link-title">
+                    <i class="fas fa-link"></i> Bookmark This Page
+                </div>
+                <p style="color: var(--text-secondary); font-size: 0.9em; margin-bottom: 12px;">
+                    Save this link to check for replies anytime without logging in:
+                </p>
+                <div class="link-container">
+                    <div class="link-box" id="token-link">{{ request.base_url }}</div>
+                    <button class="copy-btn" onclick="copyToken()">
+                        <i class="fas fa-copy"></i> <span>Copy</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="copy-feedback" id="copyFeedback">
+        <i class="fas fa-check-circle"></i>
+        <span>Link copied to clipboard!</span>
+    </div>
+
+    <script>
+        function copyToken() {
+            const link = document.getElementById('token-link').textContent;
+            const btn = event.target.closest('.copy-btn');
+
+            navigator.clipboard.writeText(link).then(() => {
+                // Show feedback
+                const feedback = document.getElementById('copyFeedback');
+                feedback.classList.add('show');
+
+                // Update button
+                const originalText = btn.innerHTML;
+                btn.classList.add('copied');
+                btn.innerHTML = '<i class="fas fa-check"></i> <span>Copied!</span>';
+
+                setTimeout(() => {
+                    feedback.classList.remove('show');
+                    btn.classList.remove('copied');
+                    btn.innerHTML = originalText;
+                }, 3000);
+            });
+        }
+
+        // Auto-refresh check for new replies (every 30 seconds)
+        setInterval(() => {
+            location.reload();
+        }, 30000);
+    </script>
+</body>
+
+</html>
