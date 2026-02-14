@@ -1,68 +1,71 @@
-# Contact Form App - Complete Guide
+# Contact Form App
 
-A modern Flask contact form app with admin panel to view and reply to messages. SQLite database for local storage.
-
-## Quick Start (Local)
-
-1. Create and activate a virtual environment:
-
-```bash
-python -m venv .venv
-.\.venv\Scripts\Activate  # Windows PowerShell
-# or: source .venv/bin/activate  # Linux/macOS
-```
-
-2. Install dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
-3. Run the app:
-
-```bash
-set SECRET_KEY=your-secret-key  # Windows PowerShell
-# or: export SECRET_KEY=your-secret-key  # Linux/macOS
-python app.py
-```
-
-4. Open http://localhost:5000 in your browser.
+A modern contact form with admin panel, file uploads, and user message tracking.
 
 ## Features
 
-- **Contact Form** (/) — Users submit name, email, and message
-- **Admin Login** (/login) — Default credentials: `admin` / `admin123`
-- **Messages Page** (/messages) — View all messages and send replies
-- **Real-time Validation** — Form validation with error messages
-- **Modern UI** — Gradient buttons, smooth animations, responsive design
+- 📨 Contact form with real-time validation
+- 📎 File upload support (up to 16MB)
+- 🔐 Admin login and reply system
+- 🔗 Unique tracking links for users (no login needed)
+- 🔍 Search & filter messages
+- 📊 Analytics dashboard
+- 🎨 Dark/light theme toggle
+- 📱 Mobile responsive design
 
-## Database
+## Tech Stack
 
-SQLite database (`database.db`) stores:
-- `messages` table — user submissions
-- `replies` table — admin responses
+- **Backend**: Flask 3.0.0
+- **Database**: SQLite
+- **Server**: Gunicorn
+- **Frontend**: HTML5, CSS3, Vanilla JavaScript
+- **Icons**: Font Awesome 6.4.0
 
-## File Structure
+## Local Setup
 
-```
-contact_form_app/
-  ├── app.py                 # Flask app
-  ├── requirements.txt       # Python dependencies
-  ├── database.db           # SQLite database (auto-created)
-  ├── static/
-  │   ├── style.css         # Styling
-  │   └── script.js         # Form validation & interactivity
-  └── templates/
-      ├── index.html        # Contact form
-      ├── login.html        # Admin login
-      └── messages.html     # Admin messages & replies
-```
+```bash
+# Install dependencies
+pip install -r requirements.txt
 
-## Customization
-
-- Change admin credentials in `app.py` (line ~65): `if request.form["username"] == "admin" and request.form["password"] == "admin123"`
-- Customize form fields in `templates/index.html`
-- Update styles in `static/style.css`
-
+# Run app
+python app.py
 ```
 
+Visit: http://localhost:5000
+
+## Deployment
+
+Deployed on [Render](https://render.com) - automatic deployment from GitHub.
+
+**Admin Credentials**: 
+- Username: `admin`
+- Password: `admin123`
+
+## Project Structure
+
+```
+├── app.py              # Flask application
+├── requirements.txt    # Python dependencies
+├── Procfile           # Deployment config
+├── render.yaml        # Render configuration
+├── templates/         # HTML pages
+│   ├── index.html          # Contact form
+│   ├── login.html          # Admin login
+│   ├── messages.html       # Admin dashboard
+│   ├── view_message.html   # User message tracking
+│   └── 404.html           # Error page
+└── static/            # CSS & JavaScript
+    ├── style.css      # Styling
+    └── script.js      # Form validation
+```
+
+## How It Works
+
+1. **User submits form** → Gets unique tracking link
+2. **User checks link anytime** → Sees message and any replies
+3. **Admin logs in** → Sees all messages
+4. **Admin replies** → User sees reply on their tracking page
+
+## License
+
+Free to use and modify.
