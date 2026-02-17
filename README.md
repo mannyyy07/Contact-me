@@ -5,7 +5,8 @@ Flask contact form app with admin replies, analytics, and optional file attachme
 ## Stack
 
 - Flask 3
-- SQLite (local runtime storage)
+- SQLite (local/dev fallback)
+- Postgres (recommended for production / Vercel)
 - HTML/CSS/JavaScript
 
 ## Local run
@@ -20,35 +21,26 @@ App runs at `http://localhost:5000`.
 ## Environment variables
 
 - `SECRET_KEY` (required in production)
-- `ADMIN_USERNAME` (default: `admin`)
-- `ADMIN_PASSWORD` (default: `admin123`)
+- `ADMIN_USERNAME` (default: `m`)
+- `ADMIN_PASSWORD` (default: `1`)
+- `DATABASE_URL` (required for durable production data)
 - `FLASK_ENV` (optional, `development` for local debug)
 
-## Deploy on Vercel
+## Deploy on Vercel (Git linked)
 
-This repo is configured for Vercel using `vercel.json`.
-
-1. Open the `contact_form_app` folder as the Vercel project root.
-2. Import the project in Vercel (or run `vercel` from this folder).
-3. Set environment variables in Vercel Project Settings:
+1. Set project root to `contact_form_app`.
+2. Add environment variables:
    - `SECRET_KEY`
    - `ADMIN_USERNAME`
    - `ADMIN_PASSWORD`
-4. Deploy.
+   - `DATABASE_URL` (Vercel Postgres / Supabase / Neon)
+3. Deploy.
 
-## Important Vercel limitation
+## Important production notes
 
-On Vercel, the local filesystem is ephemeral. This means:
-
-- SQLite data can reset between deployments/instances.
-- Uploaded files are not durable storage.
-
-For production reliability, move to:
-
-- Managed database (Postgres/Supabase/Neon)
-- Object storage (Vercel Blob/S3/Cloudinary) for uploads
+- On Vercel without `DATABASE_URL`, SQLite in serverless runtime is ephemeral.
+- Uploaded files are also ephemeral; for durable uploads use object storage.
 
 ## Existing non-Vercel files
 
 - `render.yaml` and `Procfile` are kept for Render-style deployments.
-

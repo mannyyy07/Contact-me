@@ -65,10 +65,41 @@
             {% else %}
             <div class="no-replies">No reply yet. Please check back soon.</div>
             {% endif %}
+
+            <div class="link-share">
+                <label for="trackingLink"><i class="fas fa-link"></i> Save this tracking link</label>
+                <div class="link-share-row">
+                    <input id="trackingLink" type="text" readonly value="{{ request.url }}">
+                    <button type="button" class="btn btn-secondary btn-copy" onclick="copyTrackingLink()">
+                        <i class="fas fa-copy"></i>
+                        <span id="copyLabel">Copy</span>
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
     <script src="/static/script.js"></script>
+    <script>
+        async function copyTrackingLink() {
+            const field = document.getElementById('trackingLink');
+            const label = document.getElementById('copyLabel');
+            try {
+                await navigator.clipboard.writeText(field.value);
+                label.textContent = 'Copied';
+                setTimeout(() => {
+                    label.textContent = 'Copy';
+                }, 1400);
+            } catch (err) {
+                field.select();
+                document.execCommand('copy');
+                label.textContent = 'Copied';
+                setTimeout(() => {
+                    label.textContent = 'Copy';
+                }, 1400);
+            }
+        }
+    </script>
 </body>
 
 </html>

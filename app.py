@@ -13,6 +13,12 @@ app.config["SESSION_COOKIE_SECURE"] = bool(os.environ.get("VERCEL"))
 if os.environ.get("VERCEL") and app.secret_key == "fallback-secret":
     raise RuntimeError("SECRET_KEY must be set in Vercel environment variables.")
 
+DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
+USE_POSTGRES = DATABASE_URL.startswith("postgres")
+
+if USE_POSTGRES:
+    import psycopg
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 RUNTIME_DIR = "/tmp" if os.environ.get("VERCEL") else BASE_DIR
 DB_PATH = os.path.join(RUNTIME_DIR, "database.db")
@@ -32,6 +38,9 @@ def allowed_file(filename):
 
 
 def connect_db():
+    if USE_POSTGRES:
+        return psycopg.connect(DATABASE_URL)
+
     conn = sqlite3.connect(DB_PATH)
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
@@ -41,37 +50,69 @@ def init_db():
     conn = connect_db()
     cursor = conn.cursor()
 
-    cursor.execute(
-        """
-        CREATE TABLE IF NOT EXISTS messages (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            email TEXT NOT NULL,
-            message TEXT NOT NULL,
-            token TEXT UNIQUE NOT NULL,
-            file_path TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    if USE_POSTGRES:
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS messages (
+                id BIGSERIAL PRIMARY KEY,
+                name TEXT NOT NULL,
+                email TEXT NOT NULL,
+                message TEXT NOT NULL,
+                token TEXT UNIQUE NOT NULL,
+                file_path TEXT,
+                created_at TIMESTAMPTZ DEFAULT NOW()
+            )
+            """
         )
-        """
-    )
 
-    cursor.execute(
-        """
-        CREATE TABLE IF NOT EXISTS replies (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            message_id INTEGER NOT NULL,
-            reply_text TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS replies (
+                id BIGSERIAL PRIMARY KEY,
+                message_id BIGINT NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
+                reply_text TEXT NOT NULL,
+                created_at TIMESTAMPTZ DEFAULT NOW()
+            )
+            """
         )
-        """
-    )
+
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at DESC)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_replies_message_id ON replies(message_id)")
+    else:
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS messages (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                email TEXT NOT NULL,
+                message TEXT NOT NULL,
+                token TEXT UNIQUE NOT NULL,
+                file_path TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS replies (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                message_id INTEGER NOT NULL,
+                reply_text TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE
+            )
+            """
+        )
 
     conn.commit()
     conn.close()
 
 
 init_db()
+
+if os.environ.get("VERCEL") and not USE_POSTGRES:
+    print("[WARN] DATABASE_URL not set. SQLite on Vercel is ephemeral; messages may not persist.")
 
 
 @app.route("/", methods=["GET", "POST"])
@@ -97,10 +138,18 @@ def index():
 
         conn = connect_db()
         cursor = conn.cursor()
-        cursor.execute(
-            "INSERT INTO messages (name, email, message, token, file_path) VALUES (?, ?, ?, ?, ?)",
-            (name, contact, message, token, file_path),
-        )
+
+        if USE_POSTGRES:
+            cursor.execute(
+                "INSERT INTO messages (name, email, message, token, file_path) VALUES (%s, %s, %s, %s, %s)",
+                (name, contact, message, token, file_path),
+            )
+        else:
+            cursor.execute(
+                "INSERT INTO messages (name, email, message, token, file_path) VALUES (?, ?, ?, ?, ?)",
+                (name, contact, message, token, file_path),
+            )
+
         conn.commit()
         conn.close()
 
@@ -113,20 +162,35 @@ def index():
 def view_message(token):
     conn = connect_db()
     cursor = conn.cursor()
-    cursor.execute(
-        "SELECT id, name, email, message, file_path, created_at FROM messages WHERE token = ?",
-        (token,),
-    )
+
+    if USE_POSTGRES:
+        cursor.execute(
+            "SELECT id, name, email, message, file_path, created_at FROM messages WHERE token = %s",
+            (token,),
+        )
+    else:
+        cursor.execute(
+            "SELECT id, name, email, message, file_path, created_at FROM messages WHERE token = ?",
+            (token,),
+        )
+
     msg = cursor.fetchone()
 
     if not msg:
         conn.close()
         return render_template("404.html"), 404
 
-    cursor.execute(
-        "SELECT reply_text, created_at FROM replies WHERE message_id = ? ORDER BY created_at ASC",
-        (msg[0],),
-    )
+    if USE_POSTGRES:
+        cursor.execute(
+            "SELECT reply_text, created_at FROM replies WHERE message_id = %s ORDER BY created_at ASC",
+            (msg[0],),
+        )
+    else:
+        cursor.execute(
+            "SELECT reply_text, created_at FROM replies WHERE message_id = ? ORDER BY created_at ASC",
+            (msg[0],),
+        )
+
     replies = cursor.fetchall()
     conn.close()
 
@@ -136,9 +200,9 @@ def view_message(token):
         "email": msg[2],
         "message": msg[3],
         "file_path": msg[4],
-        "created_at": msg[5],
+        "created_at": str(msg[5]),
         "token": token,
-        "replies": replies,
+        "replies": [(r[0], str(r[1])) for r in replies],
     }
 
     return render_template("view_message.html", message=message_data)
@@ -167,24 +231,38 @@ def messages():
     search_query = request.args.get("search", "").strip()
     filter_type = request.args.get("filter", "all")
 
-    query = "SELECT id, name, email, message, token, file_path, created_at FROM messages"
-    params = []
+    if USE_POSTGRES:
+        query = "SELECT id, name, email, message, token, file_path, created_at FROM messages"
+        params = []
+        if search_query:
+            query += " WHERE (name ILIKE %s OR email ILIKE %s OR message ILIKE %s)"
+            search_param = f"%{search_query}%"
+            params = [search_param, search_param, search_param]
+        query += " ORDER BY id DESC"
+        cursor.execute(query, params)
+    else:
+        query = "SELECT id, name, email, message, token, file_path, created_at FROM messages"
+        params = []
+        if search_query:
+            query += " WHERE (name LIKE ? OR email LIKE ? OR message LIKE ?)"
+            search_param = f"%{search_query}%"
+            params = [search_param, search_param, search_param]
+        query += " ORDER BY id DESC"
+        cursor.execute(query, params)
 
-    if search_query:
-        query += " WHERE (name LIKE ? OR email LIKE ? OR message LIKE ?)"
-        search_param = f"%{search_query}%"
-        params = [search_param, search_param, search_param]
-
-    query += " ORDER BY id DESC"
-    cursor.execute(query, params)
     messages_data = cursor.fetchall()
 
     messages_with_replies = []
     unreplied_count = 0
 
     for msg in messages_data:
-        cursor.execute("SELECT reply_text, created_at FROM replies WHERE message_id = ? ORDER BY created_at ASC", (msg[0],))
-        replies = cursor.fetchall()
+        if USE_POSTGRES:
+            cursor.execute("SELECT reply_text, created_at FROM replies WHERE message_id = %s ORDER BY created_at ASC", (msg[0],))
+        else:
+            cursor.execute("SELECT reply_text, created_at FROM replies WHERE message_id = ? ORDER BY created_at ASC", (msg[0],))
+
+        replies_raw = cursor.fetchall()
+        replies = [(r[0], str(r[1])) for r in replies_raw]
 
         msg_dict = {
             "id": msg[0],
@@ -193,7 +271,7 @@ def messages():
             "message": msg[3],
             "token": msg[4],
             "file_path": msg[5],
-            "created_at": msg[6],
+            "created_at": str(msg[6]),
             "replies": replies,
             "has_replies": len(replies) > 0,
         }
@@ -229,11 +307,20 @@ def reply(message_id):
 
     conn = connect_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT id FROM messages WHERE id = ?", (message_id,))
+
+    if USE_POSTGRES:
+        cursor.execute("SELECT id FROM messages WHERE id = %s", (message_id,))
+    else:
+        cursor.execute("SELECT id FROM messages WHERE id = ?", (message_id,))
+
     result = cursor.fetchone()
 
     if result:
-        cursor.execute("INSERT INTO replies (message_id, reply_text) VALUES (?, ?)", (message_id, reply_text))
+        if USE_POSTGRES:
+            cursor.execute("INSERT INTO replies (message_id, reply_text) VALUES (%s, %s)", (message_id, reply_text))
+        else:
+            cursor.execute("INSERT INTO replies (message_id, reply_text) VALUES (?, ?)", (message_id, reply_text))
+
         conn.commit()
 
     conn.close()
@@ -262,25 +349,46 @@ def analytics_api():
 
     unreplied = total_messages - replied_messages
 
-    cursor.execute(
-        """
-        SELECT DATE(created_at) as date, COUNT(*) as count
-        FROM messages
-        WHERE created_at >= datetime('now', '-7 days')
-        GROUP BY DATE(created_at)
-        ORDER BY date ASC
-        """
-    )
-    messages_by_date = cursor.fetchall()
+    if USE_POSTGRES:
+        cursor.execute(
+            """
+            SELECT DATE(created_at) as date, COUNT(*) as count
+            FROM messages
+            WHERE created_at >= NOW() - INTERVAL '7 days'
+            GROUP BY DATE(created_at)
+            ORDER BY date ASC
+            """
+        )
 
-    cursor.execute(
-        """
-        SELECT AVG((julianday(r.created_at) - julianday(m.created_at)) * 24)
-        FROM messages m
-        LEFT JOIN replies r ON m.id = r.message_id
-        WHERE r.created_at IS NOT NULL
-        """
-    )
+        cursor.execute(
+            """
+            SELECT AVG(EXTRACT(EPOCH FROM (r.created_at - m.created_at)) / 3600.0)
+            FROM messages m
+            LEFT JOIN replies r ON m.id = r.message_id
+            WHERE r.created_at IS NOT NULL
+            """
+        )
+    else:
+        cursor.execute(
+            """
+            SELECT DATE(created_at) as date, COUNT(*) as count
+            FROM messages
+            WHERE created_at >= datetime('now', '-7 days')
+            GROUP BY DATE(created_at)
+            ORDER BY date ASC
+            """
+        )
+
+        cursor.execute(
+            """
+            SELECT AVG((julianday(r.created_at) - julianday(m.created_at)) * 24)
+            FROM messages m
+            LEFT JOIN replies r ON m.id = r.message_id
+            WHERE r.created_at IS NOT NULL
+            """
+        )
+
+    messages_by_date = cursor.fetchall()
     avg_response = cursor.fetchone()[0]
 
     conn.close()
@@ -290,8 +398,8 @@ def analytics_api():
             "total_messages": total_messages,
             "replied_messages": replied_messages,
             "unreplied_messages": unreplied,
-            "avg_response_hours": round(avg_response, 2) if avg_response else 0,
-            "messages_by_date": [{"date": row[0], "count": row[1]} for row in messages_by_date],
+            "avg_response_hours": round(float(avg_response), 2) if avg_response else 0,
+            "messages_by_date": [{"date": str(row[0]), "count": row[1]} for row in messages_by_date],
         }
     )
 
@@ -309,7 +417,12 @@ def download_file(filename):
 
     conn = connect_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT token FROM messages WHERE file_path = ?", (filename,))
+
+    if USE_POSTGRES:
+        cursor.execute("SELECT token FROM messages WHERE file_path = %s", (filename,))
+    else:
+        cursor.execute("SELECT token FROM messages WHERE file_path = ?", (filename,))
+
     row = cursor.fetchone()
     conn.close()
 

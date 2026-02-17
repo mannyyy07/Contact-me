@@ -273,6 +273,30 @@ body.light-theme .file-input-wrapper {
     flex-wrap: wrap;
 }
 
+.admin-header {
+    align-items: stretch;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 14px;
+    background: linear-gradient(150deg, rgba(46, 197, 255, 0.12), rgba(255, 139, 56, 0.06));
+}
+
+.admin-intro {
+    flex: 1;
+    min-width: 260px;
+}
+
+.admin-stat-bar {
+    margin-top: 12px;
+}
+
+.admin-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: flex-end;
+}
+
 .header-content h2 {
     font-size: 1.9rem;
     display: flex;
@@ -331,6 +355,12 @@ body.light-theme .file-input-wrapper {
     align-items: flex-start;
     gap: 10px;
     margin-bottom: 10px;
+}
+
+.card-header-clean {
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--line);
 }
 
 .message-avatar {
@@ -578,6 +608,30 @@ body.light-theme .file-input-wrapper {
     box-shadow: 0 8px 18px rgba(255, 124, 42, 0.33);
 }
 
+.link-share {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--line);
+}
+
+.link-share label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+.link-share-row {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-copy {
+    min-width: 88px;
+}
+
 .brand-logo-wrap {
     display: flex;
     justify-content: center;
@@ -633,6 +687,15 @@ body.light-theme .file-input-wrapper {
 
     .messages-header {
         align-items: flex-start;
+    }
+
+    .admin-actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .link-share-row {
+        flex-direction: column;
     }
 
     .theme-toggle {
