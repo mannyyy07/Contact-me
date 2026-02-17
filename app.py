@@ -359,6 +359,7 @@ def analytics_api():
             ORDER BY date ASC
             """
         )
+        messages_by_date = cursor.fetchall()
 
         cursor.execute(
             """
@@ -368,6 +369,8 @@ def analytics_api():
             WHERE r.created_at IS NOT NULL
             """
         )
+        avg_row = cursor.fetchone()
+        avg_response = avg_row[0] if avg_row else None
     else:
         cursor.execute(
             """
@@ -378,6 +381,7 @@ def analytics_api():
             ORDER BY date ASC
             """
         )
+        messages_by_date = cursor.fetchall()
 
         cursor.execute(
             """
@@ -387,9 +391,8 @@ def analytics_api():
             WHERE r.created_at IS NOT NULL
             """
         )
-
-    messages_by_date = cursor.fetchall()
-    avg_response = cursor.fetchone()[0]
+        avg_row = cursor.fetchone()
+        avg_response = avg_row[0] if avg_row else None
 
     conn.close()
 
@@ -402,6 +405,17 @@ def analytics_api():
             "messages_by_date": [{"date": str(row[0]), "count": row[1]} for row in messages_by_date],
         }
     )
+
+
+@app.route("/api/db-status")
+def db_status():
+    """Quick runtime check to verify which DB backend is active."""
+    conn = connect_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM messages")
+    total_messages = cursor.fetchone()[0]
+    conn.close()
+    return jsonify({"backend": "postgres" if USE_POSTGRES else "sqlite", "messages": total_messages})
 
 
 @app.route("/api/set-theme", methods=["POST"])
