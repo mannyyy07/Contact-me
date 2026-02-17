@@ -16,6 +16,10 @@ if os.environ.get("VERCEL") and app.secret_key == "fallback-secret":
 DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
 USE_POSTGRES = DATABASE_URL.startswith("postgres")
 
+if USE_POSTGRES and "sslmode=" not in DATABASE_URL:
+    separator = "&" if "?" in DATABASE_URL else "?"
+    DATABASE_URL = f"{DATABASE_URL}{separator}sslmode=require"
+
 if USE_POSTGRES:
     import psycopg
 
