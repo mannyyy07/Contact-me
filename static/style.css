@@ -498,6 +498,13 @@ body.light-theme .file-input-wrapper {
     align-items: center;
 }
 
+.search-form .search-input,
+.search-form .filter-select,
+.search-form .btn-search,
+.search-form .btn-clear {
+    height: 44px;
+}
+
 .search-input-group {
     position: relative;
 }
@@ -512,6 +519,43 @@ body.light-theme .file-input-wrapper {
 
 .search-input {
     padding-left: 30px;
+}
+
+.filter-select {
+    min-width: 150px;
+}
+
+.btn-search,
+.btn-clear {
+    appearance: none;
+    -webkit-appearance: none;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    padding: 0 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    white-space: nowrap;
+    text-decoration: none;
+}
+
+.btn-search {
+    border-color: rgba(46, 197, 255, 0.45);
+}
+
+.btn-search:hover {
+    filter: brightness(1.05);
+}
+
+.btn-clear {
+    border-color: var(--line);
+}
+
+.btn-clear:hover {
+    background: rgba(255, 255, 255, 0.12);
 }
 
 .analytics-dashboard {

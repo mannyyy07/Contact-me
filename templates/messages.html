@@ -52,7 +52,7 @@
                     <option value="unreplied" {% if filter_type=='unreplied' %}selected{% endif %}>Unreplied Only</option>
                     <option value="replied" {% if filter_type=='replied' %}selected{% endif %}>Replied Only</option>
                 </select>
-                <button type="submit" class="btn-search"><i class="fas fa-check"></i> Search</button>
+                <button type="submit" class="btn-search"><i class="fas fa-magnifying-glass"></i> Search</button>
                 {% if search_query or filter_type != 'all' %}
                 <a href="/messages" class="btn-clear"><i class="fas fa-times"></i> Clear</a>
                 {% endif %}
