@@ -1,55 +1,51 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Messages - Admin Panel</title>
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/static/style.css">
 </head>
 
 <body>
+    <div class="theme-toggle">
+        <button id="themeToggle" class="theme-btn" title="Toggle Dark/Light Mode">
+            <i class="fas fa-moon"></i>
+        </button>
+    </div>
+
     <div class="messages-container">
+        <div class="brand-logo-wrap compact">
+            <img src="/static/logo.svg" alt="ContactMe logo" class="brand-logo">
+        </div>
         <div class="messages-header">
             <div class="header-content">
-                <h2><i class="fas fa-inbox"></i> Admin Messages Panel</h2>
+                <h2><i class="fas fa-inbox"></i> Admin Messages</h2>
                 <div class="header-stats">
-                    <span class="stat-item">
-                        <i class="fas fa-envelope"></i>
-                        Total: <strong>{{ messages|length }}</strong>
-                    </span>
-                    <span class="stat-item unreplied-badge">
-                        <i class="fas fa-bell"></i>
-                        Unreplied: <strong>{{ unreplied_count }}</strong>
-                    </span>
+                    <span class="stat-item"><i class="fas fa-envelope"></i> Total: <strong>{{ messages|length }}</strong></span>
+                    <span class="stat-item unreplied-badge"><i class="fas fa-bell"></i> Unreplied: <strong>{{ unreplied_count }}</strong></span>
                 </div>
             </div>
-            <a href="/logout" class="btn btn-secondary">
-                <i class="fas fa-sign-out-alt"></i>
-                Logout
-            </a>
+            <a href="/logout" class="btn btn-secondary"><i class="fas fa-sign-out-alt"></i> Logout</a>
         </div>
 
-        <!-- Analytics Dashboard -->
         <div class="analytics-dashboard" id="analytics">
-            <div class="analytics-loading">
-                <i class="fas fa-spinner fa-spin"></i> Loading Analytics...
-            </div>
+            <div class="analytics-loading"><i class="fas fa-spinner fa-spin"></i> Loading analytics...</div>
         </div>
 
-        <!-- Search and Filter -->
         <div class="search-filter-section">
             <form method="GET" action="/messages" class="search-form">
                 <div class="search-input-group">
                     <i class="fas fa-search"></i>
-                    <input type="text" name="search" placeholder="Search by name, email, or message content..."
-                        value="{{ search_query }}" class="search-input">
+                    <input type="text" name="search" placeholder="Search by name, contact, or message..." value="{{ search_query }}"
+                        class="search-input">
                 </div>
                 <select name="filter" class="filter-select" onchange="this.form.submit()">
                     <option value="all" {% if filter_type=='all' %}selected{% endif %}>All Messages</option>
-                    <option value="unreplied" {% if filter_type=='unreplied' %}selected{% endif %}>Unreplied Only
-                    </option>
+                    <option value="unreplied" {% if filter_type=='unreplied' %}selected{% endif %}>Unreplied Only</option>
                     <option value="replied" {% if filter_type=='replied' %}selected{% endif %}>Replied Only</option>
                 </select>
                 <button type="submit" class="btn-search"><i class="fas fa-check"></i> Search</button>
@@ -64,18 +60,14 @@
             {% for msg in messages %}
             <div class="message-card {% if not msg.has_replies %}unreplied{% endif %}">
                 {% if not msg.has_replies %}
-                <div class="unreplied-indicator" title="No replies yet">
-                    <i class="fas fa-exclamation-circle"></i> Unreplied
-                </div>
+                <div class="unreplied-indicator"><i class="fas fa-exclamation-circle"></i> Unreplied</div>
                 {% endif %}
 
                 <div class="message-header">
-                    <div class="message-avatar">
-                        <i class="fas fa-envelope"></i>
-                    </div>
+                    <div class="message-avatar"><i class="fas fa-envelope"></i></div>
                     <div class="message-meta">
                         <h3>{{ msg.name }}</h3>
-                        <p class="message-email"><i class="fas fa-envelope-open"></i> {{ msg.email }}</p>
+                        <p class="message-email"><i class="fas fa-address-book"></i> {{ msg.email }}</p>
                         <p class="message-date"><i class="fas fa-calendar"></i> {{ msg.created_at[:10] }}</p>
                     </div>
                 </div>
@@ -83,52 +75,37 @@
                 {% if msg.file_path %}
                 <div class="message-file">
                     <i class="fas fa-paperclip"></i>
-                    <a href="{{ url_for('download_file', filename=msg.file_path) }}" target="_blank">
-                        Attachment
-                    </a>
+                    <a href="{{ url_for('download_file', filename=msg.file_path) }}" target="_blank">Attachment</a>
                 </div>
                 {% endif %}
 
-                <div class="message-body">
-                    <p>{{ msg.message }}</p>
-                </div>
+                <div class="message-body"><p>{{ msg.message }}</p></div>
 
-                <!-- Replies Section -->
                 {% if msg.replies %}
                 <div class="replies-section">
-                    <div class="replies-header">
-                        <i class="fas fa-reply"></i> Replies ({{ msg.replies|length }})
-                    </div>
+                    <div class="replies-header"><i class="fas fa-reply"></i> Replies ({{ msg.replies|length }})</div>
                     {% for reply in msg.replies %}
                     <div class="reply-item">
-                        <div class="reply-badge">Manny</div>
+                        <div class="reply-badge">Admin</div>
                         <div class="reply-content">
                             <p>{{ reply[0] }}</p>
-                            <small class="reply-time">
-                                <i class="fas fa-clock"></i> {{ reply[1] }}
-                            </small>
+                            <small class="reply-time"><i class="fas fa-clock"></i> {{ reply[1] }}</small>
                         </div>
                     </div>
                     {% endfor %}
                 </div>
                 {% endif %}
 
-                <!-- Reply Form -->
                 <form method="POST" action="/reply/{{ msg.id }}" class="reply-form">
                     <div class="reply-input-group">
-                        <textarea name="reply_text" placeholder="Type your reply..." maxlength="500"
-                            required></textarea>
-                        <button type="submit" class="btn-reply">
-                            <i class="fas fa-paper-plane"></i>
-                        </button>
+                        <textarea name="reply_text" placeholder="Type your reply..." maxlength="500" required></textarea>
+                        <button type="submit" class="btn-reply"><i class="fas fa-paper-plane"></i></button>
                     </div>
                 </form>
 
                 <div class="message-footer">
                     <small><i class="fas fa-hashtag"></i> Message #{{ msg.id }}</small>
-                    <a href="/message/{{ msg.token }}" target="_blank" class="view-public-link">
-                        <i class="fas fa-link"></i> Public Link
-                    </a>
+                    <a href="/message/{{ msg.token }}" target="_blank" class="view-public-link"><i class="fas fa-link"></i> Public Link</a>
                 </div>
             </div>
             {% endfor %}
@@ -137,67 +114,31 @@
         <div class="empty-state">
             <i class="fas fa-inbox"></i>
             <h3>No messages found</h3>
-            <p>
-                {% if search_query or filter_type != 'all' %}
-                Try adjusting your search or filter criteria
-                {% else %}
-                Start collecting feedback from your visitors
-                {% endif %}
-            </p>
-            <a href="/" class="btn btn-primary">
-                <i class="fas fa-arrow-left"></i>
-                Back to Contact Form
-            </a>
+            <p>{% if search_query or filter_type != 'all' %}Try adjusting your search or filter criteria{% else %}No messages yet{% endif %}</p>
+            <a href="/" class="btn btn-primary"><i class="fas fa-arrow-left"></i> Back to Home</a>
         </div>
         {% endif %}
     </div>
 
+    <script src="/static/script.js"></script>
     <script>
-        // Load and display analytics
         async function loadAnalytics() {
             try {
                 const response = await fetch('/api/analytics');
                 const data = await response.json();
-
                 const analyticsDiv = document.getElementById('analytics');
                 analyticsDiv.innerHTML = `
                     <div class="analytics-grid">
-                        <div class="analytics-card">
-                            <div class="analytics-icon"><i class="fas fa-envelope"></i></div>
-                            <div class="analytics-content">
-                                <h4>Total Messages</h4>
-                                <p class="analytics-value">${data.total_messages}</p>
-                            </div>
-                        </div>
-                        <div class="analytics-card">
-                            <div class="analytics-icon"><i class="fas fa-check-circle"></i></div>
-                            <div class="analytics-content">
-                                <h4>Replied Messages</h4>
-                                <p class="analytics-value">${data.replied_messages}</p>
-                            </div>
-                        </div>
-                        <div class="analytics-card warning">
-                            <div class="analytics-icon"><i class="fas fa-exclamation-circle"></i></div>
-                            <div class="analytics-content">
-                                <h4>Unreplied Messages</h4>
-                                <p class="analytics-value">${data.unreplied_messages}</p>
-                            </div>
-                        </div>
-                        <div class="analytics-card">
-                            <div class="analytics-icon"><i class="fas fa-clock"></i></div>
-                            <div class="analytics-content">
-                                <h4>Avg Response Time</h4>
-                                <p class="analytics-value">${data.avg_response_hours}h</p>
-                            </div>
-                        </div>
+                        <div class="analytics-card"><div class="analytics-icon"><i class="fas fa-envelope"></i></div><div class="analytics-content"><h4>Total Messages</h4><p class="analytics-value">${data.total_messages}</p></div></div>
+                        <div class="analytics-card"><div class="analytics-icon"><i class="fas fa-check-circle"></i></div><div class="analytics-content"><h4>Replied</h4><p class="analytics-value">${data.replied_messages}</p></div></div>
+                        <div class="analytics-card warning"><div class="analytics-icon"><i class="fas fa-exclamation-circle"></i></div><div class="analytics-content"><h4>Unreplied</h4><p class="analytics-value">${data.unreplied_messages}</p></div></div>
+                        <div class="analytics-card"><div class="analytics-icon"><i class="fas fa-clock"></i></div><div class="analytics-content"><h4>Avg Response</h4><p class="analytics-value">${data.avg_response_hours}h</p></div></div>
                     </div>
                 `;
             } catch (error) {
                 console.error('Failed to load analytics:', error);
             }
         }
-
-        // Load analytics on page load
         window.addEventListener('load', loadAnalytics);
     </script>
 </body>

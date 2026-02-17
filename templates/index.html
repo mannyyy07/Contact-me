@@ -1,12 +1,13 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Contact Form</title>
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="static/style.css">
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 
 <body>
@@ -16,36 +17,41 @@
         </button>
     </div>
 
-    <div class="container">
+    <div class="container centered">
+        <div class="brand-logo-wrap">
+            <img src="/static/logo.svg" alt="ContactMe logo" class="brand-logo">
+        </div>
         <div class="form-header">
-            <i class="fas fa-envelope"></i>
-            <h2>Get In Touch</h2>
-            <p>Drop a message and I'll get back to you, but only if I want to!</p>
+            <p>Send your message and keep your unique link to check replies later.</p>
         </div>
 
-        <div id="successMessage" class="success-message">
-            <i class="fas fa-check-circle"></i>
-            <span>Message sent successfully! Check your message status with the link provided.</span>
-        </div>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <section class="flash-stack">
+            {% for category, msg in messages %}
+            <div class="flash flash-{{ category }}">{{ msg }}</div>
+            {% endfor %}
+        </section>
+        {% endif %}
+        {% endwith %}
 
         <form id="contactForm" method="POST" enctype="multipart/form-data" onsubmit="return validateForm(event)">
-
             <div class="form-group">
                 <label for="name">Name</label>
-                <input type="text" id="name" name="name" placeholder="I mean, you gotta tell who you are :)" required>
+                <input type="text" id="name" name="name" placeholder="Your name" required>
                 <span class="error-message" id="nameError"></span>
             </div>
 
             <div class="form-group">
-                <label for="email">Email</label>
-                <input type="email" id="email" name="email" placeholder="don't worry, I won't hack it!" required>
+                <label for="contact">Where should I reach out to you?</label>
+                <input type="text" id="contact" name="contact" placeholder="Email, phone, Discord, LinkedIn, etc."
+                    required>
                 <span class="error-message" id="emailError"></span>
             </div>
 
             <div class="form-group">
                 <label for="message">Message</label>
-                <textarea id="message" name="message"
-                    placeholder="Here's where you turn into a keyboard warrior...(minimum 10 characters)"
+                <textarea id="message" name="message" placeholder="Write your message (minimum 10 characters)"
                     required></textarea>
                 <span class="char-count"><span id="charCount">0</span>/500</span>
                 <span class="error-message" id="messageError"></span>
@@ -58,7 +64,7 @@
                     <span class="file-name" id="fileName">No file chosen</span>
                     <span class="file-size" id="fileSize"></span>
                 </div>
-                <p class="file-help">Max 16MB • Accepted: txt, pdf, png, jpg, jpeg, gif, doc, docx, zip</p>
+                <p class="file-help">Max 16MB - Accepted: txt, pdf, png, jpg, jpeg, gif, doc, docx, zip</p>
                 <span class="error-message" id="fileError"></span>
             </div>
 
@@ -74,7 +80,12 @@
             </div>
         </form>
     </div>
+
+    <footer class="site-footer">
+        <p>Made with <span class="heart">❤</span> by Manny.</p>
+    </footer>
+
+    <script src="/static/script.js"></script>
 </body>
-<script src="/static/script.js"></script>
 
 </html>

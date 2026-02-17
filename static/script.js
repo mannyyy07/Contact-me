@@ -1,4 +1,4 @@
-// Theme toggle
+﻿// Theme toggle
 function initThemeToggle() {
     const themeBtn = document.getElementById('themeToggle');
     if (!themeBtn) return;
@@ -24,7 +24,6 @@ function initThemeToggle() {
             ? '<i class="fas fa-sun"></i>'
             : '<i class="fas fa-moon"></i>';
 
-        // Send to server
         fetch('/api/set-theme', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -33,7 +32,6 @@ function initThemeToggle() {
     });
 }
 
-// File upload handler
 function initFileUpload() {
     const fileInput = document.getElementById('file');
     if (!fileInput) return;
@@ -45,25 +43,6 @@ function initFileUpload() {
     const allowedExts = ['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'doc', 'docx', 'zip'];
 
     fileWrapper.addEventListener('click', () => fileInput.click());
-    fileWrapper.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        fileWrapper.style.borderColor = '#38bdf8';
-        fileWrapper.style.background = 'rgba(56, 189, 248, 0.1)';
-    });
-    fileWrapper.addEventListener('dragleave', () => {
-        fileWrapper.style.borderColor = '';
-        fileWrapper.style.background = '';
-    });
-    fileWrapper.addEventListener('drop', (e) => {
-        e.preventDefault();
-        fileWrapper.style.borderColor = '';
-        fileWrapper.style.background = '';
-        if (e.dataTransfer.files.length) {
-            fileInput.files = e.dataTransfer.files;
-            updateFileDisplay();
-        }
-    });
-
     fileInput.addEventListener('change', updateFileDisplay);
 
     function updateFileDisplay() {
@@ -97,16 +76,13 @@ function initFileUpload() {
     }
 }
 
-// Form elements
 const form = document.getElementById('contactForm');
 const nameInput = document.getElementById('name');
-const emailInput = document.getElementById('email');
+const contactInput = document.getElementById('contact');
 const messageInput = document.getElementById('message');
 const submitBtn = form ? form.querySelector('button[type="submit"]') : null;
-const successMessage = document.getElementById('successMessage');
 const charCount = document.getElementById('charCount');
 
-// Real-time character counter
 if (messageInput) {
     messageInput.addEventListener('input', () => {
         charCount.textContent = messageInput.value.length;
@@ -117,43 +93,32 @@ if (messageInput) {
     });
 }
 
-// Validate individual fields
 function validateName() {
     if (!nameInput) return true;
     const nameError = document.getElementById('nameError');
     const value = nameInput.value.trim();
 
-    if (value.length === 0) {
-        nameError.textContent = 'Name is required';
-        return false;
-    } else if (value.length < 2) {
+    if (value.length < 2) {
         nameError.textContent = 'Name must be at least 2 characters';
         return false;
-    } else if (!/^[a-zA-Z\s'-]+$/.test(value)) {
-        nameError.textContent = 'Name can only contain letters, spaces, hyphens, and apostrophes';
-        return false;
-    } else {
-        nameError.textContent = '';
-        return true;
     }
+
+    nameError.textContent = '';
+    return true;
 }
 
-function validateEmail() {
-    if (!emailInput) return true;
-    const emailError = document.getElementById('emailError');
-    const value = emailInput.value.trim();
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+function validateContact() {
+    if (!contactInput) return true;
+    const contactError = document.getElementById('emailError');
+    const value = contactInput.value.trim();
 
-    if (value.length === 0) {
-        emailError.textContent = 'Email is required';
+    if (value.length < 3) {
+        contactError.textContent = 'Please enter where we should reach out';
         return false;
-    } else if (!emailRegex.test(value)) {
-        emailError.textContent = 'Please enter a valid email address';
-        return false;
-    } else {
-        emailError.textContent = '';
-        return true;
     }
+
+    contactError.textContent = '';
+    return true;
 }
 
 function validateMessage() {
@@ -161,96 +126,58 @@ function validateMessage() {
     const messageError = document.getElementById('messageError');
     const value = messageInput.value.trim();
 
-    if (value.length === 0) {
-        messageError.textContent = 'Message is required';
-        return false;
-    } else if (value.length < 10) {
+    if (value.length < 10) {
         messageError.textContent = 'Message must be at least 10 characters';
         return false;
-    } else if (value.length > 500) {
+    }
+
+    if (value.length > 500) {
         messageError.textContent = 'Message cannot exceed 500 characters';
         return false;
-    } else {
-        messageError.textContent = '';
-        return true;
     }
+
+    messageError.textContent = '';
+    return true;
 }
 
-// Real-time validation on input
 if (nameInput) {
     nameInput.addEventListener('blur', validateName);
-    nameInput.addEventListener('input', () => {
-        if (document.getElementById('nameError').textContent) {
-            validateName();
-        }
-    });
 }
 
-if (emailInput) {
-    emailInput.addEventListener('blur', validateEmail);
-    emailInput.addEventListener('input', () => {
-        if (document.getElementById('emailError').textContent) {
-            validateEmail();
-        }
-    });
+if (contactInput) {
+    contactInput.addEventListener('blur', validateContact);
 }
 
 if (messageInput) {
     messageInput.addEventListener('blur', validateMessage);
-    messageInput.addEventListener('input', () => {
-        if (document.getElementById('messageError').textContent) {
-            validateMessage();
-        }
-    });
 }
 
-// Main form validation and submission
 function validateForm(event) {
     if (!form) return false;
     event.preventDefault();
 
-    // Validate all fields
     const isNameValid = validateName();
-    const isEmailValid = validateEmail();
+    const isContactValid = validateContact();
     const isMessageValid = validateMessage();
 
-    if (!isNameValid || !isEmailValid || !isMessageValid) {
+    if (!isNameValid || !isContactValid || !isMessageValid) {
         return false;
     }
 
-    // Show loading state
     if (submitBtn) {
         submitBtn.classList.add('loading');
         submitBtn.querySelector('span').textContent = 'Sending...';
         submitBtn.disabled = true;
     }
 
-    // Simulate sending (submit the form)
     setTimeout(() => {
         form.submit();
-    }, 500);
+    }, 250);
 
     return false;
 }
 
-// Show success message and reset form
 window.addEventListener('DOMContentLoaded', () => {
     initThemeToggle();
     initFileUpload();
-
-    if (successMessage) {
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('sent') === 'true') {
-            successMessage.classList.add('show');
-            if (form) {
-                form.reset();
-                charCount.textContent = '0';
-            }
-
-            setTimeout(() => {
-                successMessage.classList.remove('show');
-                // Don't replace URL to preserve message token link
-            }, 4000);
-        }
-    }
 });

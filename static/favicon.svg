@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="ContactMe icon">
+  <defs>
+    <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2ec5ff"/>
+      <stop offset="100%" stop-color="#0079ff"/>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" rx="16" ry="16" width="56" height="56" fill="url(#g1)"/>
+  <path d="M16 22h32v20H16z" fill="#fff"/>
+  <path d="M16 23l16 12 16-12" fill="none" stroke="#0079ff" stroke-width="3"/>
+</svg>

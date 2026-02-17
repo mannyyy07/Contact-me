@@ -1,71 +1,54 @@
-# Contact Form App
+﻿# Contact Form App
 
-A modern contact form with admin panel, file uploads, and user message tracking.
+Flask contact form app with admin replies, analytics, and optional file attachments.
 
-## Features
+## Stack
 
-- 📨 Contact form with real-time validation
-- 📎 File upload support (up to 16MB)
-- 🔐 Admin login and reply system
-- 🔗 Unique tracking links for users (no login needed)
-- 🔍 Search & filter messages
-- 📊 Analytics dashboard
-- 🎨 Dark/light theme toggle
-- 📱 Mobile responsive design
+- Flask 3
+- SQLite (local runtime storage)
+- HTML/CSS/JavaScript
 
-## Tech Stack
-
-- **Backend**: Flask 3.0.0
-- **Database**: SQLite
-- **Server**: Gunicorn
-- **Frontend**: HTML5, CSS3, Vanilla JavaScript
-- **Icons**: Font Awesome 6.4.0
-
-## Local Setup
+## Local run
 
 ```bash
-# Install dependencies
 pip install -r requirements.txt
-
-# Run app
 python app.py
 ```
 
-Visit: http://localhost:5000
+App runs at `http://localhost:5000`.
 
-## Deployment
+## Environment variables
 
-Deployed on [Render](https://render.com) - automatic deployment from GitHub.
+- `SECRET_KEY` (required in production)
+- `ADMIN_USERNAME` (default: `admin`)
+- `ADMIN_PASSWORD` (default: `admin123`)
+- `FLASK_ENV` (optional, `development` for local debug)
 
-**Admin Credentials**: 
-- Username: `admin`
-- Password: `admin123`
+## Deploy on Vercel
 
-## Project Structure
+This repo is configured for Vercel using `vercel.json`.
 
-```
-├── app.py              # Flask application
-├── requirements.txt    # Python dependencies
-├── Procfile           # Deployment config
-├── render.yaml        # Render configuration
-├── templates/         # HTML pages
-│   ├── index.html          # Contact form
-│   ├── login.html          # Admin login
-│   ├── messages.html       # Admin dashboard
-│   ├── view_message.html   # User message tracking
-│   └── 404.html           # Error page
-└── static/            # CSS & JavaScript
-    ├── style.css      # Styling
-    └── script.js      # Form validation
-```
+1. Open the `contact_form_app` folder as the Vercel project root.
+2. Import the project in Vercel (or run `vercel` from this folder).
+3. Set environment variables in Vercel Project Settings:
+   - `SECRET_KEY`
+   - `ADMIN_USERNAME`
+   - `ADMIN_PASSWORD`
+4. Deploy.
 
-## How It Works
+## Important Vercel limitation
 
-1. **User submits form** → Gets unique tracking link
-2. **User checks link anytime** → Sees message and any replies
-3. **Admin logs in** → Sees all messages
-4. **Admin replies** → User sees reply on their tracking page
+On Vercel, the local filesystem is ephemeral. This means:
 
-## License
+- SQLite data can reset between deployments/instances.
+- Uploaded files are not durable storage.
 
-Free to use and modify.
+For production reliability, move to:
+
+- Managed database (Postgres/Supabase/Neon)
+- Object storage (Vercel Blob/S3/Cloudinary) for uploads
+
+## Existing non-Vercel files
+
+- `render.yaml` and `Procfile` are kept for Render-style deployments.
+
