@@ -15,12 +15,14 @@ if os.environ.get("VERCEL") and app.secret_key == "fallback-secret":
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
 USE_POSTGRES = DATABASE_URL.startswith("postgres")
+DB_BACKEND = "postgres" if USE_POSTGRES else "sqlite"
+DB_INIT_ERROR = None
 
 if USE_POSTGRES and "sslmode=" not in DATABASE_URL:
     separator = "&" if "?" in DATABASE_URL else "?"
     DATABASE_URL = f"{DATABASE_URL}{separator}sslmode=require"
 
-if USE_POSTGRES:
+if DB_BACKEND == "postgres":
     import psycopg
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -42,7 +44,7 @@ def allowed_file(filename):
 
 
 def connect_db():
-    if USE_POSTGRES:
+    if DB_BACKEND == "postgres":
         return psycopg.connect(DATABASE_URL)
 
     conn = sqlite3.connect(DB_PATH)
@@ -51,63 +53,74 @@ def connect_db():
 
 
 def init_db():
+    global DB_BACKEND, DB_INIT_ERROR
+
+    if DB_BACKEND == "postgres":
+        try:
+            conn = connect_db()
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS messages (
+                    id BIGSERIAL PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    email TEXT NOT NULL,
+                    message TEXT NOT NULL,
+                    token TEXT UNIQUE NOT NULL,
+                    file_path TEXT,
+                    created_at TIMESTAMPTZ DEFAULT NOW()
+                )
+                """
+            )
+
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS replies (
+                    id BIGSERIAL PRIMARY KEY,
+                    message_id BIGINT NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
+                    reply_text TEXT NOT NULL,
+                    created_at TIMESTAMPTZ DEFAULT NOW()
+                )
+                """
+            )
+
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at DESC)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_replies_message_id ON replies(message_id)")
+            conn.commit()
+            conn.close()
+            return
+        except Exception as exc:
+            DB_BACKEND = "sqlite"
+            DB_INIT_ERROR = str(exc)
+            print(f"[WARN] Postgres init failed, fallback to sqlite: {exc}")
+
     conn = connect_db()
     cursor = conn.cursor()
-
-    if USE_POSTGRES:
-        cursor.execute(
-            """
-            CREATE TABLE IF NOT EXISTS messages (
-                id BIGSERIAL PRIMARY KEY,
-                name TEXT NOT NULL,
-                email TEXT NOT NULL,
-                message TEXT NOT NULL,
-                token TEXT UNIQUE NOT NULL,
-                file_path TEXT,
-                created_at TIMESTAMPTZ DEFAULT NOW()
-            )
-            """
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            email TEXT NOT NULL,
+            message TEXT NOT NULL,
+            token TEXT UNIQUE NOT NULL,
+            file_path TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
+        """
+    )
 
-        cursor.execute(
-            """
-            CREATE TABLE IF NOT EXISTS replies (
-                id BIGSERIAL PRIMARY KEY,
-                message_id BIGINT NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
-                reply_text TEXT NOT NULL,
-                created_at TIMESTAMPTZ DEFAULT NOW()
-            )
-            """
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS replies (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            message_id INTEGER NOT NULL,
+            reply_text TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE
         )
-
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at DESC)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_replies_message_id ON replies(message_id)")
-    else:
-        cursor.execute(
-            """
-            CREATE TABLE IF NOT EXISTS messages (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                email TEXT NOT NULL,
-                message TEXT NOT NULL,
-                token TEXT UNIQUE NOT NULL,
-                file_path TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-            """
-        )
-
-        cursor.execute(
-            """
-            CREATE TABLE IF NOT EXISTS replies (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                message_id INTEGER NOT NULL,
-                reply_text TEXT NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE
-            )
-            """
-        )
+        """
+    )
 
     conn.commit()
     conn.close()
@@ -115,8 +128,8 @@ def init_db():
 
 init_db()
 
-if os.environ.get("VERCEL") and not USE_POSTGRES:
-    print("[WARN] DATABASE_URL not set. SQLite on Vercel is ephemeral; messages may not persist.")
+if os.environ.get("VERCEL") and DB_BACKEND != "postgres":
+    print("[WARN] Using sqlite backend. Set a valid DATABASE_URL for persistent Vercel storage.")
 
 
 @app.route("/", methods=["GET", "POST"])
@@ -143,7 +156,7 @@ def index():
         conn = connect_db()
         cursor = conn.cursor()
 
-        if USE_POSTGRES:
+        if DB_BACKEND == "postgres":
             cursor.execute(
                 "INSERT INTO messages (name, email, message, token, file_path) VALUES (%s, %s, %s, %s, %s)",
                 (name, contact, message, token, file_path),
@@ -167,7 +180,7 @@ def view_message(token):
     conn = connect_db()
     cursor = conn.cursor()
 
-    if USE_POSTGRES:
+    if DB_BACKEND == "postgres":
         cursor.execute(
             "SELECT id, name, email, message, file_path, created_at FROM messages WHERE token = %s",
             (token,),
@@ -184,7 +197,7 @@ def view_message(token):
         conn.close()
         return render_template("404.html"), 404
 
-    if USE_POSTGRES:
+    if DB_BACKEND == "postgres":
         cursor.execute(
             "SELECT reply_text, created_at FROM replies WHERE message_id = %s ORDER BY created_at ASC",
             (msg[0],),
@@ -235,7 +248,7 @@ def messages():
     search_query = request.args.get("search", "").strip()
     filter_type = request.args.get("filter", "all")
 
-    if USE_POSTGRES:
+    if DB_BACKEND == "postgres":
         query = "SELECT id, name, email, message, token, file_path, created_at FROM messages"
         params = []
         if search_query:
@@ -260,7 +273,7 @@ def messages():
     unreplied_count = 0
 
     for msg in messages_data:
-        if USE_POSTGRES:
+        if DB_BACKEND == "postgres":
             cursor.execute("SELECT reply_text, created_at FROM replies WHERE message_id = %s ORDER BY created_at ASC", (msg[0],))
         else:
             cursor.execute("SELECT reply_text, created_at FROM replies WHERE message_id = ? ORDER BY created_at ASC", (msg[0],))
@@ -312,7 +325,7 @@ def reply(message_id):
     conn = connect_db()
     cursor = conn.cursor()
 
-    if USE_POSTGRES:
+    if DB_BACKEND == "postgres":
         cursor.execute("SELECT id FROM messages WHERE id = %s", (message_id,))
     else:
         cursor.execute("SELECT id FROM messages WHERE id = ?", (message_id,))
@@ -320,7 +333,7 @@ def reply(message_id):
     result = cursor.fetchone()
 
     if result:
-        if USE_POSTGRES:
+        if DB_BACKEND == "postgres":
             cursor.execute("INSERT INTO replies (message_id, reply_text) VALUES (%s, %s)", (message_id, reply_text))
         else:
             cursor.execute("INSERT INTO replies (message_id, reply_text) VALUES (?, ?)", (message_id, reply_text))
@@ -353,7 +366,7 @@ def analytics_api():
 
     unreplied = total_messages - replied_messages
 
-    if USE_POSTGRES:
+    if DB_BACKEND == "postgres":
         cursor.execute(
             """
             SELECT DATE(created_at) as date, COUNT(*) as count
@@ -419,7 +432,10 @@ def db_status():
     cursor.execute("SELECT COUNT(*) FROM messages")
     total_messages = cursor.fetchone()[0]
     conn.close()
-    return jsonify({"backend": "postgres" if USE_POSTGRES else "sqlite", "messages": total_messages})
+    payload = {"backend": DB_BACKEND, "messages": total_messages}
+    if DB_INIT_ERROR:
+        payload["error"] = DB_INIT_ERROR
+    return jsonify(payload)
 
 
 @app.route("/api/set-theme", methods=["POST"])
@@ -436,7 +452,7 @@ def download_file(filename):
     conn = connect_db()
     cursor = conn.cursor()
 
-    if USE_POSTGRES:
+    if DB_BACKEND == "postgres":
         cursor.execute("SELECT token FROM messages WHERE file_path = %s", (filename,))
     else:
         cursor.execute("SELECT token FROM messages WHERE file_path = ?", (filename,))
@@ -460,3 +476,4 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     debug_mode = os.environ.get("FLASK_ENV") == "development"
     app.run(debug=debug_mode, host="0.0.0.0", port=port)
+
